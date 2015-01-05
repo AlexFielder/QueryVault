@@ -358,10 +358,7 @@ namespace QueryVault
             notBar = Convert.ToString(Convert.ToChar(151));
             numBars = percent * maxBars;
 
-            Application.StatusBar = before + 
-                Application.WorksheetFunction.Rept(bar, numBars) + 
-                Application.WorksheetFunction.Rept(notBar, maxBars - numBars) + 
-                after + " " + Message + " (" + percent.ToString("P1") + ")";
+            Application.StatusBar = Message + " (" + percent.ToString("P1") + ")";
 
             //DoEvents();
         }
