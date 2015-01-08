@@ -27,6 +27,15 @@ namespace QueryVault
         private void button1_Click(object sender, EventArgs e)
         {
             ListBoxFileItem selectedfileitem = (ListBoxFileItem)m_searchResultsListBox.SelectedItem;
+            Autodesk.Connectivity.WebServices.Folder folder = Globals.ThisAddIn.m_conn.WebServiceManager.DocumentService.GetFolderById(selectedfileitem.File.FolderId);
+            selectedfileitem.folder = folder;
+            //User Defined Properties - add more as necessary
+            if (!Globals.ThisAddIn.pdf)
+            {
+                selectedfileitem.FeatureCount = Globals.ThisAddIn.m_conn.PropertyManager.GetPropertyValue(selectedfileitem.File, Globals.ThisAddIn.myUDP_FeatureCount, null);
+                selectedfileitem.OccurrenceCount = Globals.ThisAddIn.m_conn.PropertyManager.GetPropertyValue(selectedfileitem.File, Globals.ThisAddIn.myUDP_OccurrenceCount, null);
+                selectedfileitem.ParameterCount = Globals.ThisAddIn.m_conn.PropertyManager.GetPropertyValue(selectedfileitem.File, Globals.ThisAddIn.myUDP_ParameterCount, null);
+            }
             if (selectedfileitem !=null)
             {
                 Globals.ThisAddIn.NoMatch = false;
