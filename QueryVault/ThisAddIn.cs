@@ -32,12 +32,16 @@ namespace QueryVault
         public bool OldStatus { get; set; }
         public WebServiceManager ServiceManager { get; set; }
 		public DirectoryInfo InventorProjectRootFolder = null;
-		private Vault.Currency.Connections.Connection m_conn = null;
+		public Vault.Currency.Connections.Connection m_conn = null;
 		//private PropDefInfo[] propDefInfos = null;
 		//private Vault.Forms.Models.BrowseVaultNavigationModel m_model = null;
 		public bool NoMatch = true;
 		public bool pdf = false;
-		private bool printSelect;
+        public PropertyDefinition propDef;
+        public PropertyDefinition myUDP_FeatureCount = null;
+        public PropertyDefinition myUDP_OccurrenceCount = null;
+        public PropertyDefinition myUDP_ParameterCount = null;
+		private bool printSelect = true;
 
 		private DdeClient m_client;
 
@@ -100,6 +104,8 @@ namespace QueryVault
 				//Part Number sysname = PartNumber
 				//Project sysname = Project
 				//(Vault) Revision sysname = Revision
+
+                Globals.ThisAddIn.Application.ActiveSheet.UsedRange();
 
                 Excel.Range range = ws.UsedRange;
                 int usedCount = 0;
@@ -240,7 +246,8 @@ namespace QueryVault
 									//MessageBox.Show(m_conn.Vault.ToString());
 									if (m_conn.Vault.ToString() == "Legacy Vault")
 									{
-										rVaultLocation.Value2 = selectedfile.folder.FullName.ToString().Replace("/", "\\").Replace("$", "C:\\Legacy Vault Working Folder") + "\\" + selectedfile.File.EntityName;
+                                        rVaultLocation.Value2 = selectedfile.Folder.FullName.ToString().Replace("/","\\").Replace("$","C:\\Legacy Vault Working Folder") + "\\" + selectedfile.File.EntityName;
+										//rVaultLocation.Value2 = selectedfile.folder.FullName.ToString().Replace("/", "\\").Replace("$", "C:\\Legacy Vault Working Folder") + "\\" + selectedfile.File.EntityName;
                                     }
                                     else
                                     {
@@ -346,21 +353,7 @@ namespace QueryVault
 		///Updates the statusbar with a percentage so we can see how far along we are.
         public void UpdateStatusBar(double percent, string Message = "")
         {
-            const long maxBars = 20;
-            const string before = "[";
-            const string after = "]";
-
-            string bar = null;
-            string notBar = null;
-            double numBars = 0;
-
-            bar = Convert.ToString(Convert.ToChar(31));
-            notBar = Convert.ToString(Convert.ToChar(151));
-            numBars = percent * maxBars;
-
             Application.StatusBar = Message + " (" + percent.ToString("P1") + ")";
-
-            //DoEvents();
         }
         private void DoSearch(string p, string VaultedFileName)
         {
@@ -390,11 +383,8 @@ namespace QueryVault
 
             //search for files
             List<Autodesk.Connectivity.WebServices.File> fileList = new List<Autodesk.Connectivity.WebServices.File>();
-            PropertyDefinition propDef;
-            PropertyDefinition myUDP_FeatureCount = null;
-            PropertyDefinition myUDP_OccurrenceCount = null;
-            PropertyDefinition myUDP_ParameterCount = null;
-            if (!Globals.ThisAddIn.pdf)
+           
+            if (!pdf)
             {
                 PropertyDefinitionDictionary props =
                 m_conn.PropertyManager.GetPropertyDefinitions(VDF.Vault.Currency.Entities.EntityClassIds.Files, null, PropertyDefinitionFilter.IncludeAll);
@@ -465,6 +455,8 @@ namespace QueryVault
                     List<Autodesk.Connectivity.WebServices.File> results;
                     if (!Globals.ThisAddIn.pdf)
                     {
+                        fileList.RemoveAll(StartsReplaceWith); //bin those files which start "Replace With"
+                        fileList.RemoveAll(ContainsUnderscores);
                         results = fileList.FindAll(x => x.Name.EndsWith(".ipt") || x.Name.EndsWith(".iam")); //ignore .pdf
                     }
                     else
@@ -506,6 +498,15 @@ namespace QueryVault
                         //get the first and only file we found whose name contains .iam or .ipt
                         Autodesk.Connectivity.WebServices.File foundfile = results[0];
                         ListBoxFileItem fileItem = new ListBoxFileItem(new VDF.Vault.Currency.Entities.FileIteration(m_conn, foundfile));
+                        Autodesk.Connectivity.WebServices.Folder folder = m_conn.WebServiceManager.DocumentService.GetFolderById(foundfile.FolderId);
+                        fileItem.folder = folder;
+                        //User Defined Properties - add more as necessary
+                        if (!pdf)
+                        {
+                            fileItem.FeatureCount = m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_FeatureCount, null);
+                            fileItem.OccurrenceCount = m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_OccurrenceCount, null);
+                            fileItem.ParameterCount = m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_ParameterCount, null);
+                        }
                         Globals.ThisAddIn.NoMatch = false;
                         Globals.ThisAddIn.selectedfile = fileItem;
                         return;
@@ -517,6 +518,16 @@ namespace QueryVault
                 }
                 
             }
+        }
+
+        private bool ContainsUnderscores(ACW.File obj)
+        {
+            return obj.Name.ToLower().Contains("_");
+        }
+
+        private bool StartsReplaceWith(ACW.File obj)
+        {
+            return obj.Name.ToLower().StartsWith("replace with");
         }
         private void InitializePropertyDefs()
         {
@@ -704,6 +715,10 @@ namespace QueryVault
             file = f;
         }
         public Autodesk.Connectivity.WebServices.Folder folder;
+        public Autodesk.Connectivity.WebServices.Folder Folder
+        {
+            get { return folder; }
+        }
         /// <summary>
         /// Determines the text displayed in the ListBox
         /// </summary>
