@@ -415,6 +415,7 @@ namespace QueryVault
                             break;
                         case "ConstraintCount":
                             myUDP_ConstraintCount = propDef;
+                            break;
                         default:
                             break;
                     }
