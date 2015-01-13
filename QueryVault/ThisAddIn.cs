@@ -77,6 +77,9 @@ namespace QueryVault
 
 		#endregion
 
+        /// <summary>
+        /// 
+        /// </summary>
         public void InitializeSearchFromExcel()
 		{
             OldStatus = Application.DisplayStatusBar;
@@ -365,6 +368,12 @@ namespace QueryVault
         {
             Application.StatusBar = Message + " (" + percent.ToString("P1") + ")";
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="p"></param>
+        /// <param name="VaultedFileName"></param>
         private void DoSearch(string p, string VaultedFileName)
         {
             SrchCond searchCondition = new SrchCond();
