@@ -41,6 +41,7 @@ namespace QueryVault
         public PropertyDefinition myUDP_FeatureCount = null;
         public PropertyDefinition myUDP_OccurrenceCount = null;
         public PropertyDefinition myUDP_ParameterCount = null;
+        public PropertyDefinition myUDP_ConstraintCount = null;
 		private bool printSelect = true;
 
 		private DdeClient m_client;
@@ -184,10 +185,11 @@ namespace QueryVault
 							Excel.Range rTitle = range.Cells[i, 11];
 							Excel.Range rDrawingRevision = range.Cells[i, 12];
 							Excel.Range rLegacyDrawingNumber = range.Cells[i, 13];
-							Excel.Range rFeatureCount = range.Cells[i, 14];
-							Excel.Range rParameterCount = range.Cells[i, 15];
-							Excel.Range rOccurrenceCount = range.Cells[i, 16];
-							Excel.Range rMaterial = range.Cells[i, 17];
+                            Excel.Range rConstraintCount = range.Cells[i, 14];
+							Excel.Range rFeatureCount = range.Cells[i, 15];
+							Excel.Range rParameterCount = range.Cells[i, 16];
+							Excel.Range rOccurrenceCount = range.Cells[i, 17];
+							Excel.Range rMaterial = range.Cells[i, 18];
 
 							rVaultedFileName.Select();
 							//rVaultLocation.Select(); //scroll with the active cell
@@ -315,6 +317,14 @@ namespace QueryVault
                                     {
                                         rOccurrenceCount.Value2 = 0;
                                     }
+                                    if (selectedfile.ConstraintCount != null)
+                                    {
+                                        rConstraintCount.Value2 = Convert.ToInt32(selectedfile.ConstraintCount);
+                                    }
+                                    else
+                                    {
+                                        rConstraintCount.Value2 = 0;
+                                    }
                                     #endregion
                                     //reset the NoMatch bool & selectedfile
                                 }
@@ -403,6 +413,8 @@ namespace QueryVault
                         case "ParameterCount":
                             myUDP_ParameterCount = propDef;
                             break;
+                        case "ConstraintCount":
+                            myUDP_ConstraintCount = propDef;
                         default:
                             break;
                     }
@@ -732,6 +744,9 @@ namespace QueryVault
         public object OccurrenceCount { get; set; }
 
         public object ParameterCount { get; set; }
+
+        public object ConstraintCount { get; set; }
+
     }
     #endregion
 
