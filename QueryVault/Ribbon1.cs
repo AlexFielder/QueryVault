@@ -51,5 +51,18 @@ namespace QueryVault
                 Globals.ThisAddIn.PrintPDFs();
             }
         }
+
+        private void button1_Click(object sender, RibbonControlEventArgs e)
+        {
+            if (Globals.ThisAddIn.Application.ActiveWorkbook.Name == "Project Tracker.xlsx")
+            {
+                Globals.ThisAddIn.GenerateListForFasterSearch();
+            }
+            else
+            {
+                MessageBox.Show("This application will only work in the Project Tracker.xlsx file!");
+                return;
+            }
+        }
     }
 }
