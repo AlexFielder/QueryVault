@@ -368,7 +368,7 @@ namespace QueryVault
         {
             Application.StatusBar = Message + " (" + percent.ToString("P1") + ")";
         }
-
+        
         /// <summary>
         /// 
         /// </summary>
@@ -465,6 +465,7 @@ namespace QueryVault
                             fileItem.FeatureCount = m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_FeatureCount, null);
                             fileItem.OccurrenceCount = m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_OccurrenceCount, null);
                             fileItem.ParameterCount = m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_ParameterCount, null);
+                            fileItem.ConstraintCount = m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_ConstraintCount, null);
                         }
                         Globals.ThisAddIn.NoMatch = false;
                         Globals.ThisAddIn.selectedfile = fileItem;
@@ -528,6 +529,7 @@ namespace QueryVault
                             fileItem.FeatureCount = m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_FeatureCount, null);
                             fileItem.OccurrenceCount = m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_OccurrenceCount, null);
                             fileItem.ParameterCount = m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_ParameterCount, null);
+                            fileItem.ConstraintCount = m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_ConstraintCount, null);
                         }
                         Globals.ThisAddIn.NoMatch = false;
                         Globals.ThisAddIn.selectedfile = fileItem;
@@ -758,6 +760,14 @@ namespace QueryVault
         public object ConstraintCount { get; set; }
 
     }
+    
     #endregion
-
+#region "ExcelFile"
+    public class ExcelFile
+    {
+        public string Name { get; set; }
+        public string Folder { get; set; }
+        public long FolderId { get; set; }
+    }
+#endregion
 }
