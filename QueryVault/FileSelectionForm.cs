@@ -28,7 +28,7 @@ namespace QueryVault
         {
             ListBoxFileItem selectedfileitem = (ListBoxFileItem)m_searchResultsListBox.SelectedItem;
             Autodesk.Connectivity.WebServices.Folder folder = Globals.ThisAddIn.m_conn.WebServiceManager.DocumentService.GetFolderById(selectedfileitem.File.FolderId);
-            selectedfileitem.folder = folder;
+            //selectedfileitem.folder = folder;
             //User Defined Properties - add more as necessary
             if (!Globals.ThisAddIn.pdf)
             {

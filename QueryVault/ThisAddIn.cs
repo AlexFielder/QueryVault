@@ -87,70 +87,75 @@ namespace QueryVault
 			ServiceManager = m_conn.WebServiceManager;
 			InventorProjectRootFolder = new DirectoryInfo(ServiceManager.DocumentService.GetRequiredWorkingFolderLocation()); //need this for later.
             if (m_conn != null)
-				try
-			{
-				Excel.Workbook wb = Globals.ThisAddIn.Application.ActiveWorkbook;
-				Excel._Worksheet ws = wb.ActiveSheet;
-				if (!ws.Name.Contains("MODELLING"))
-				{
-					MessageBox.Show("Try switching to one the tabs labelled \"MODELLING\" and try again!");
-					return;
-				}
-
-				//property definitions retrieved from Vault Settings -> Behaviours Tab -> Properties screen and the "System Name" column in the resulting table.
-                PropDef materialPropDef = ServiceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE").First(propDef => propDef.SysName.Equals("Material"));
-				PropDef titlePropDef = ServiceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE").First(propDef => propDef.SysName.Equals("Title"));
-				PropDef revNumberPropDef = ServiceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE").First(propDef => propDef.SysName.Equals("RevNumber"));
-				PropDef legacyDwgNumPropDef = ServiceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE").First(propDef => propDef.SysName.Equals("Subject"));
-				//an FYI for possible future usage:
-				//Comments sysname = Comments
-				//Description sysname = Description
-				//Part Number sysname = PartNumber
-				//Project sysname = Project
-				//(Vault) Revision sysname = Revision
-
-                Globals.ThisAddIn.Application.ActiveSheet.UsedRange();
-
-                Excel.Range range = ws.UsedRange;
-                int usedCount = 0;
-                string[] RangeValues = new string[range.Rows.Count];
-                for (int i = 3; i < range.Rows.Count; i++)
+                try
                 {
-                    Excel.Range r = range.Cells[i, 2];
-                    Excel.Range rVaultedName = range.Cells[i, 3];
-                    string str = r.Value2 ; //!= null ? r.Value2.ToString() : "";
-                    if (str != null)
+                    Excel.Application excelapp = Globals.ThisAddIn.Application;
+                    //set calculation to manual
+                    excelapp.Calculation = Excel.XlCalculation.xlCalculationManual;
+                    Excel.Workbook wb = Globals.ThisAddIn.Application.ActiveWorkbook;
+                    Excel._Worksheet ws = wb.ActiveSheet;
+                    if (!ws.Name.Contains("MODELLING"))
                     {
-                        usedCount++;
+                        MessageBox.Show("Try switching to one the tabs labelled \"MODELLING\" and try again!");
+                        return;
                     }
-                    string vaultedNameStr = rVaultedName.Value2;
-                    if (vaultedNameStr != null)
+
+                    //property definitions retrieved from Vault Settings -> Behaviours Tab -> Properties screen and the "System Name" column in the resulting table.
+                    PropDef materialPropDef = ServiceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE").First(propDef => propDef.SysName.Equals("Material"));
+                    PropDef titlePropDef = ServiceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE").First(propDef => propDef.SysName.Equals("Title"));
+                    PropDef revNumberPropDef = ServiceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE").First(propDef => propDef.SysName.Equals("RevNumber"));
+                    PropDef legacyDwgNumPropDef = ServiceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE").First(propDef => propDef.SysName.Equals("Subject"));
+                    //an FYI for possible future usage:
+                    //Comments sysname = Comments
+                    //Description sysname = Description
+                    //Part Number sysname = PartNumber
+                    //Project sysname = Project
+                    //(Vault) Revision sysname = Revision
+
+                    Globals.ThisAddIn.Application.ActiveSheet.UsedRange();
+
+                    Excel.Range range = ws.UsedRange;
+                    int usedCount = 0;
+                    string[] RangeValues = new string[range.Rows.Count];
+                    for (int i = 3; i < range.Rows.Count; i++)
                     {
-                        RangeValues[i] = vaultedNameStr;
+                        Excel.Range r = range.Cells[i, 2];
+                        Excel.Range rVaultedName = range.Cells[i, 3];
+                        string str = r.Value2; //!= null ? r.Value2.ToString() : "";
+                        if (str != null)
+                        {
+                            usedCount++;
+                        }
+                        string vaultedNameStr = rVaultedName.Value2;
+                        if (vaultedNameStr != null)
+                        {
+                            RangeValues[i] = vaultedNameStr;
+                        }
                     }
+                    //create a new instance of the FoundList Object
+                    RangeValues = RangeValues.Where(x => !string.IsNullOrEmpty(x)).ToArray();
+                    FoundList = new List<ListBoxFileItem>();
+                    if (RangeValues.Length > 0) //
+                    {
+                        UpdateExcel(materialPropDef, titlePropDef, revNumberPropDef, legacyDwgNumPropDef, RangeValues, range, usedCount);
+                    }
+                    else
+                    {
+                        BeginPopulateExcel(materialPropDef, titlePropDef, revNumberPropDef, legacyDwgNumPropDef, range, usedCount);
+                    }
+                    //reset calculation
+                    excelapp.Calculation = Excel.XlCalculation.xlCalculationAutomatic;
                 }
-				//create a new instance of the FoundList Object
-                RangeValues = RangeValues.Where(x => !string.IsNullOrEmpty(x)).ToArray();
-                FoundList = new List<ListBoxFileItem>();
-                if(RangeValues.Length > 0 ) //
+                catch (Exception ex)
                 {
-                    UpdateExcel(materialPropDef, titlePropDef, revNumberPropDef, legacyDwgNumPropDef, RangeValues, range,usedCount);
+                    MessageBox.Show("The error was: " + ex.Message + "\n" + ex.StackTrace);
+                    throw;
                 }
-                else
-                {
-                    BeginPopulateExcel(materialPropDef, titlePropDef, revNumberPropDef, legacyDwgNumPropDef, range, usedCount);    
-                }
-                
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("The error was: " + ex.Message + "\n" + ex.StackTrace);
-                throw;
-            }
             //we need to be sure to release all our connections when the app closes
             Application.StatusBar = false;
             Application.DisplayStatusBar = OldStatus;
             Vault.Library.ConnectionManager.CloseAllConnections();
+            
         }
 
         private void UpdateExcel(PropDef materialPropDef, 
@@ -550,8 +555,8 @@ namespace QueryVault
                     {
                         ListBoxFileItem fileItem = new ListBoxFileItem(new VDF.Vault.Currency.Entities.FileIteration(m_conn, file));
                         //long folderId = VDF.Vault.Currency.Entities
-                        Autodesk.Connectivity.WebServices.Folder folder = m_conn.WebServiceManager.DocumentService.GetFolderById(file.FolderId);
-                        fileItem.folder = folder;
+                        //VDF.Vault.Currency.Entities.Folder folder = m_conn.WebServiceManager.DocumentService.GetFolderById(file.FolderId);
+                        //fileItem.folder = folder;
                         //FilePath[] filepaths = m_conn.WebServiceManager.DocumentService.FindFilePathsByNameAndChecksum(file.Name, file.Cksum);
                         //String iptiampath = filepaths[0].Path.Replace("$", "C:\\Vault Working Folder");
                         //fileItem.Folder = iptiampath.Replace("/","\\");
@@ -616,8 +621,8 @@ namespace QueryVault
                         //get the first and only file we found whose name contains .iam or .ipt
                         Autodesk.Connectivity.WebServices.File foundfile = results[0];
                         ListBoxFileItem fileItem = new ListBoxFileItem(new VDF.Vault.Currency.Entities.FileIteration(m_conn, foundfile));
-                        Autodesk.Connectivity.WebServices.Folder folder = m_conn.WebServiceManager.DocumentService.GetFolderById(foundfile.FolderId);
-                        fileItem.folder = folder;
+                        //VDF.Vault.Currency.Entities.Folder folder = m_conn.WebServiceManager.DocumentService.GetFolderById(foundfile.FolderId);
+                        //fileItem.folder = folder;
                         //User Defined Properties - add more as necessary
                         if (!pdf)
                         {
@@ -712,9 +717,10 @@ namespace QueryVault
                 foreach (FileIteration file in fileIterations)
                 {
                     ListBoxFileItem fileItem = new ListBoxFileItem(new VDF.Vault.Currency.Entities.FileIteration(m_conn, file));
-                    fileItem.folder = (from VDF.Vault.Currency.Entities.Folder f in folderIdsToFolderEntities
-                                       where f.Id == fileItem.Folder.Id
-                                       select f).FirstOrDefault();
+                    fileItem.folder = folderIdsToFolderEntities.Select(m => m).Where(kvp => kvp.Key == file.FolderId).Select(k => k.Value).First();
+                    //fileItem.folder = (from VDF.Vault.Currency.Entities.Folder f in folderIdsToFolderEntities
+                    //                   where f.Id == file.FolderId
+                    //                   select f).First();
                     fileItem.ConstraintCount = propValues.GetValue(file, myUDP_ConstraintCount);
                     fileItem.FeatureCount = propValues.GetValue(file, myUDP_FeatureCount);
                     fileItem.OccurrenceCount = propValues.GetValue(file, myUDP_OccurrenceCount);
@@ -954,8 +960,8 @@ namespace QueryVault
         {
             file = f;
         }
-        public ACW.Folder folder;
-        public ACW.Folder Folder
+        public VDF.Vault.Currency.Entities.Folder folder;
+        public VDF.Vault.Currency.Entities.Folder Folder
         {
             get { return folder; }
         }
