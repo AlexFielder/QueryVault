@@ -59,6 +59,9 @@ namespace QueryVault
 		public ListBoxFileItem selectedfile;
 		public List<ListBoxFileItem> FoundList;
         public List<Autodesk.Connectivity.WebServices.File> fileList;
+        public List<VDF.Vault.Currency.Entities.FileIteration> fileIterations;
+        public VDF.Vault.Currency.Properties.PropertyValues propValues;
+        public IDictionary<long, VDF.Vault.Currency.Entities.Folder> folderIdsToFolderEntities;
 		#endregion
 
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
@@ -93,6 +96,7 @@ namespace QueryVault
 			ServiceManager = m_conn.WebServiceManager;
 			InventorProjectRootFolder = new DirectoryInfo(ServiceManager.DocumentService.GetRequiredWorkingFolderLocation()); //need this for later.
             if (m_conn != null)
+            {
                 try
                 {
                     Excel.Application excelapp = Globals.ThisAddIn.Application;
@@ -144,7 +148,7 @@ namespace QueryVault
                     VaultedRangeValues = VaultedRangeValues.Where(x => !string.IsNullOrEmpty(x)).ToArray();
                     NonVaultedRangeValues = NonVaultedRangeValues.Where(x => !string.IsNullOrEmpty(x)).ToArray();
                     FoundList = new List<ListBoxFileItem>();
-                    if (VaultedRangeValues.Length > 0) //
+                    if (VaultedRangeValues.Length > 0) //need to think about this distinction a bit more as it will currently ignore files that aren't already vaulted.
                     {
                         UpdateExcel(VaultedRangeValues, range, usedCount);
                     }
@@ -160,6 +164,8 @@ namespace QueryVault
                     MessageBox.Show("The error was: " + ex.Message + "\n" + ex.StackTrace);
                     throw;
                 }
+            }
+                
             //we need to be sure to release all our connections when the app closes
             Application.StatusBar = false;
             Application.DisplayStatusBar = OldStatus;
@@ -193,21 +199,34 @@ namespace QueryVault
                 {
                     FileSelectionForm fileForm = new FileSelectionForm(m_conn);
                     Excel.Range rFileName = range.Cells[i, 2]; //column B
+                    int PotentialMatches = 0;
                     foreach (Autodesk.Connectivity.WebServices.File file in results)
                     {
                         if (file.Name.Contains(rFileName.Value2))
                         {
                             ListBoxFileItem fileItem = new ListBoxFileItem(new VDF.Vault.Currency.Entities.FileIteration(m_conn, file));
                             fileForm.m_searchResultsListBox.Items.Add(fileItem);
+                            PotentialMatches++;
                         }
                     }
-                    //create a form object to display found items
-                    string selectedfilename = string.Empty;
-                    //update the items count label
-                    fileForm.m_SearchingForLabel.Text = "Searching for filename(s) containing: " + rFileName.Value2;
-                    fileForm.m_itemsCountLabel.Text = (results.Count > 0) ? results.Count + " Items" : "0 Items";
-                    //display the form and wait for it to close using the ShowDialog() method.
-                    fileForm.ShowDialog();
+                    if (fileForm.m_searchResultsListBox.Items.Count == 1) //only one file added so it must be the file we need.
+                    {
+                        selectedfile = (ListBoxFileItem)fileForm.m_searchResultsListBox.Items[0];
+                    }
+                    else if (fileForm.m_searchResultsListBox.Items.Count > 1)
+                    {
+                        //create a form object to display found items
+                        string selectedfilename = string.Empty;
+                        //update the items count label
+                        fileForm.m_SearchingForLabel.Text = "Searching for filename(s) containing: " + rFileName.Value2;
+                        fileForm.m_itemsCountLabel.Text = (PotentialMatches > 0) ? PotentialMatches + " Items" : "0 Items";
+                        //display the form and wait for it to close using the ShowDialog() method.
+                        fileForm.ShowDialog();
+                    }
+                    else
+                    {
+                        NoMatch = true;
+                    }
                 }
                 else if (results.Count == 1)
                 {
@@ -218,6 +237,23 @@ namespace QueryVault
                 }
                 if (selectedfile != null)
                 {
+                    selectedfile.folder = folderIdsToFolderEntities.Select(m => m).Where(kvp => kvp.Key == selectedfile.File.FolderId).Select(k => k.Value).First();
+                    selectedfile.ConstraintCount = Convert.ToInt32(propValues.GetValue(selectedfile.File, myUDP_ConstraintCountPropDefinition));
+                    selectedfile.FeatureCount = Convert.ToInt32(propValues.GetValue(selectedfile.File, myUDP_FeatureCountPropDefinition));
+                    selectedfile.OccurrenceCount = Convert.ToInt32(propValues.GetValue(selectedfile.File, myUDP_OccurrenceCountPropDefinition));
+                    selectedfile.ParameterCount = Convert.ToInt32(propValues.GetValue(selectedfile.File, myUDP_ParameterCountPropDefinition));
+                    selectedfile.LegacyDrawingNumber = propValues.GetValue(selectedfile.File, legacyDwgNumPropDefinition).ToString();
+                    if (selectedfile.File.EntityName.EndsWith(".ipt"))
+                    {
+                        selectedfile.Material = propValues.GetValue(selectedfile.File, materialPropDefinition).ToString();
+                    }
+                    else
+                    {
+                        selectedfile.Material = "";
+                    }
+                    
+                    selectedfile.RevNumber = propValues.GetValue(selectedfile.File, revNumberPropDefinition).ToString();
+                    selectedfile.Title = propValues.GetValue(selectedfile.File, titlePropDefinition).ToString();
                     Excel.Range rVaultedFileName = range.Cells[i, 3];
                     Excel.Range rState = range.Cells[i, 4];
                     Excel.Range rRevision = range.Cells[i, 5];
@@ -246,6 +282,7 @@ namespace QueryVault
                         rParameterCount,
                         rOccurrenceCount,
                         rMaterial);
+                    selectedfile = null;
                 }
             }
         }
@@ -267,7 +304,7 @@ namespace QueryVault
             }
             string bookmark = string.Empty;
             SrchStatus status = null;
-            fileList = new List<Autodesk.Connectivity.WebServices.File>();
+            fileList = new List<ACW.File>();
             while (status == null || fileList.Count < status.TotalHits)
             {
                 Autodesk.Connectivity.WebServices.File[] files = m_conn.WebServiceManager.DocumentService.FindFilesBySearchConditions(
@@ -277,6 +314,20 @@ namespace QueryVault
                 if (files != null)
                     fileList.AddRange(files);
             }
+            //Get all properties for these files.
+            fileIterations = new List<FileIteration>(fileList.Select(result => new VDF.Vault.Currency.Entities.FileIteration(m_conn, result)));
+            propValues = m_conn.PropertyManager.GetPropertyValues(fileIterations, new VDF.Vault.Currency.Properties.PropertyDefinition[] { 
+                        myUDP_FeatureCountPropDefinition, 
+                        myUDP_OccurrenceCountPropDefinition, 
+                        myUDP_ParameterCountPropDefinition, 
+                        myUDP_ConstraintCountPropDefinition,
+                        materialPropDefinition,
+                        legacyDwgNumPropDefinition,
+                        revNumberPropDefinition,
+                        titlePropDefinition
+                    }, null);
+            //Get all folders for these files.
+            folderIdsToFolderEntities = m_conn.FolderManager.GetFoldersByIds(fileIterations.Select(file => file.FolderId));
         }
 
         private void UpdateExcel(string[] VaultedRangeValues, 
@@ -469,7 +520,7 @@ namespace QueryVault
                 rFileType.Value2 = "Part";
                 //only bother with material for part files.
                 //PropInst materialPropInst = ServiceManager.PropertyService.GetProperties("FILE", new long[] { selectedfile.File.EntityIterationId }, new long[] { materialPropDef.Id }).First();
-                if (selectedfile.Material != null)
+                if (selectedfile.Material != string.Empty)
                 {
                     rMaterial.Value2 = selectedfile.Material;
                     //rMaterial.Value2 = materialPropInst.Val;
@@ -785,9 +836,8 @@ namespace QueryVault
                         }
                     }
                 }
-                List<VDF.Vault.Currency.Entities.FileIteration> fileIterations = 
-                    new List<FileIteration>(MyResults.Select(result => new VDF.Vault.Currency.Entities.FileIteration(m_conn, result)));
-                VDF.Vault.Currency.Properties.PropertyValues propValues =
+                fileIterations = new List<FileIteration>(MyResults.Select(result => new VDF.Vault.Currency.Entities.FileIteration(m_conn, result)));
+                propValues =
                     m_conn.PropertyManager.GetPropertyValues(fileIterations, new VDF.Vault.Currency.Properties.PropertyDefinition[] { 
                         myUDP_FeatureCountPropDefinition, 
                         myUDP_OccurrenceCountPropDefinition, 
@@ -798,7 +848,7 @@ namespace QueryVault
                         revNumberPropDefinition,
                         titlePropDefinition
                     }, null);
-                IDictionary<long, VDF.Vault.Currency.Entities.Folder> folderIdsToFolderEntities = m_conn.FolderManager.GetFoldersByIds(fileIterations.Select(file => file.FolderId));
+                folderIdsToFolderEntities = m_conn.FolderManager.GetFoldersByIds(fileIterations.Select(file => file.FolderId));
                 foreach (FileIteration file in fileIterations)
                 {
                     ListBoxFileItem fileItem = new ListBoxFileItem(new VDF.Vault.Currency.Entities.FileIteration(m_conn, file));

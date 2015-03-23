@@ -37,10 +37,10 @@
             this.tab1 = this.Factory.CreateRibbonTab();
             this.group1 = this.Factory.CreateRibbonGroup();
             this.QueryVault = this.Factory.CreateRibbonButton();
-            this.FindVaultedPdf = this.Factory.CreateRibbonButton();
-            this.PrintSelectedPdfs = this.Factory.CreateRibbonButton();
             this.button1 = this.Factory.CreateRibbonButton();
             this.group2 = this.Factory.CreateRibbonGroup();
+            this.FindVaultedPdf = this.Factory.CreateRibbonButton();
+            this.PrintSelectedPdfs = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -66,22 +66,9 @@
             this.QueryVault.Name = "QueryVault";
             this.QueryVault.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.QueryVault_Click);
             // 
-            // FindVaultedPdf
-            // 
-            this.FindVaultedPdf.Label = "Find Vaulted pdf";
-            this.FindVaultedPdf.Name = "FindVaultedPdf";
-            this.FindVaultedPdf.ScreenTip = "...For each .ipt file in our spreadsheet and add a link back to it from the sprea" +
-    "dsheet";
-            this.FindVaultedPdf.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.FindVaultedPdf_Click);
-            // 
-            // PrintSelectedPdfs
-            // 
-            this.PrintSelectedPdfs.Label = "Print Selected PDFs";
-            this.PrintSelectedPdfs.Name = "PrintSelectedPdfs";
-            this.PrintSelectedPdfs.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.PrintSelectedPdfs_Click);
-            // 
             // button1
             // 
+            this.button1.Enabled = false;
             this.button1.Label = "button1";
             this.button1.Name = "button1";
             this.button1.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button1_Click);
@@ -92,6 +79,22 @@
             this.group2.Items.Add(this.PrintSelectedPdfs);
             this.group2.Label = "group2";
             this.group2.Name = "group2";
+            // 
+            // FindVaultedPdf
+            // 
+            this.FindVaultedPdf.Enabled = false;
+            this.FindVaultedPdf.Label = "Find Vaulted pdf";
+            this.FindVaultedPdf.Name = "FindVaultedPdf";
+            this.FindVaultedPdf.ScreenTip = "...For each .ipt file in our spreadsheet and add a link back to it from the sprea" +
+    "dsheet";
+            this.FindVaultedPdf.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.FindVaultedPdf_Click);
+            // 
+            // PrintSelectedPdfs
+            // 
+            this.PrintSelectedPdfs.Enabled = false;
+            this.PrintSelectedPdfs.Label = "Print Selected PDFs";
+            this.PrintSelectedPdfs.Name = "PrintSelectedPdfs";
+            this.PrintSelectedPdfs.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.PrintSelectedPdfs_Click);
             // 
             // Ribbon1
             // 
