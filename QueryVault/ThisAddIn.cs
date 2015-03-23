@@ -199,6 +199,8 @@ namespace QueryVault
                 {
                     FileSelectionForm fileForm = new FileSelectionForm(m_conn);
                     Excel.Range rFileName = range.Cells[i, 2]; //column B
+                    if (rFileName.Value2 == null)
+                        return;
                     int PotentialMatches = 0;
                     foreach (Autodesk.Connectivity.WebServices.File file in results)
                     {
@@ -237,52 +239,81 @@ namespace QueryVault
                 }
                 if (selectedfile != null)
                 {
-                    selectedfile.folder = folderIdsToFolderEntities.Select(m => m).Where(kvp => kvp.Key == selectedfile.File.FolderId).Select(k => k.Value).First();
-                    selectedfile.ConstraintCount = Convert.ToInt32(propValues.GetValue(selectedfile.File, myUDP_ConstraintCountPropDefinition));
-                    selectedfile.FeatureCount = Convert.ToInt32(propValues.GetValue(selectedfile.File, myUDP_FeatureCountPropDefinition));
-                    selectedfile.OccurrenceCount = Convert.ToInt32(propValues.GetValue(selectedfile.File, myUDP_OccurrenceCountPropDefinition));
-                    selectedfile.ParameterCount = Convert.ToInt32(propValues.GetValue(selectedfile.File, myUDP_ParameterCountPropDefinition));
-                    selectedfile.LegacyDrawingNumber = propValues.GetValue(selectedfile.File, legacyDwgNumPropDefinition).ToString();
-                    if (selectedfile.File.EntityName.EndsWith(".ipt"))
+                    try
                     {
-                        selectedfile.Material = propValues.GetValue(selectedfile.File, materialPropDefinition).ToString();
+                        selectedfile.folder = folderIdsToFolderEntities.Select(m => m).Where(kvp => kvp.Key == selectedfile.File.FolderId).Select(k => k.Value).First();
+                        selectedfile.ConstraintCount = Convert.ToInt32(propValues.GetValue(selectedfile.File, myUDP_ConstraintCountPropDefinition));
+                        selectedfile.FeatureCount = Convert.ToInt32(propValues.GetValue(selectedfile.File, myUDP_FeatureCountPropDefinition));
+                        selectedfile.OccurrenceCount = Convert.ToInt32(propValues.GetValue(selectedfile.File, myUDP_OccurrenceCountPropDefinition));
+                        selectedfile.ParameterCount = Convert.ToInt32(propValues.GetValue(selectedfile.File, myUDP_ParameterCountPropDefinition));
+                        if (propValues.GetValue(selectedfile.File, legacyDwgNumPropDefinition) != null)
+                        {
+                            selectedfile.LegacyDrawingNumber = propValues.GetValue(selectedfile.File, legacyDwgNumPropDefinition).ToString();
+                        }
+                        else
+                        {
+                            selectedfile.LegacyDrawingNumber = "";
+                        }
+                        if (selectedfile.File.EntityName.EndsWith(".ipt"))
+                        {
+                            selectedfile.Material = propValues.GetValue(selectedfile.File, materialPropDefinition).ToString();
+                        }
+                        else
+                        {
+                            selectedfile.Material = "";
+                        }
+                        if (propValues.GetValue(selectedfile.File, revNumberPropDefinition) != null)
+                        {
+                            selectedfile.RevNumber = propValues.GetValue(selectedfile.File, revNumberPropDefinition).ToString();
+                        }
+                        else
+                        {
+                            selectedfile.RevNumber = "";
+                        }
+                        if (propValues.GetValue(selectedfile.File, titlePropDefinition) != null)
+                        {
+                            selectedfile.Title = propValues.GetValue(selectedfile.File, titlePropDefinition).ToString();
+                        }
+                        else
+                        {
+                            selectedfile.Title = "";
+                        }
+                        Excel.Range rVaultedFileName = range.Cells[i, 3];
+                        Excel.Range rState = range.Cells[i, 4];
+                        Excel.Range rRevision = range.Cells[i, 5];
+                        Excel.Range rFileType = range.Cells[i, 6];
+                        Excel.Range rVaulted = range.Cells[i, 7];
+                        Excel.Range rVaultLocation = range.Cells[i, 10];
+                        Excel.Range rTitle = range.Cells[i, 11];
+                        Excel.Range rDrawingRevision = range.Cells[i, 12];
+                        Excel.Range rLegacyDrawingNumber = range.Cells[i, 13];
+                        Excel.Range rConstraintCount = range.Cells[i, 14];
+                        Excel.Range rFeatureCount = range.Cells[i, 15];
+                        Excel.Range rParameterCount = range.Cells[i, 16];
+                        Excel.Range rOccurrenceCount = range.Cells[i, 17];
+                        Excel.Range rMaterial = range.Cells[i, 18];
+                        PopulateExcel(rVaultedFileName,
+                            rState,
+                            rRevision,
+                            rFileType,
+                            rVaulted,
+                            rVaultLocation,
+                            rTitle,
+                            rDrawingRevision,
+                            rLegacyDrawingNumber,
+                            rConstraintCount,
+                            rFeatureCount,
+                            rParameterCount,
+                            rOccurrenceCount,
+                            rMaterial);
+                        selectedfile = null;
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        selectedfile.Material = "";
+                        MessageBox.Show("the error was: " + ex.Message + " " + ex.StackTrace);
+                        throw;
                     }
                     
-                    selectedfile.RevNumber = propValues.GetValue(selectedfile.File, revNumberPropDefinition).ToString();
-                    selectedfile.Title = propValues.GetValue(selectedfile.File, titlePropDefinition).ToString();
-                    Excel.Range rVaultedFileName = range.Cells[i, 3];
-                    Excel.Range rState = range.Cells[i, 4];
-                    Excel.Range rRevision = range.Cells[i, 5];
-                    Excel.Range rFileType = range.Cells[i, 6];
-                    Excel.Range rVaulted = range.Cells[i, 7];
-                    Excel.Range rVaultLocation = range.Cells[i, 10];
-                    Excel.Range rTitle = range.Cells[i, 11];
-                    Excel.Range rDrawingRevision = range.Cells[i, 12];
-                    Excel.Range rLegacyDrawingNumber = range.Cells[i, 13];
-                    Excel.Range rConstraintCount = range.Cells[i, 14];
-                    Excel.Range rFeatureCount = range.Cells[i, 15];
-                    Excel.Range rParameterCount = range.Cells[i, 16];
-                    Excel.Range rOccurrenceCount = range.Cells[i, 17];
-                    Excel.Range rMaterial = range.Cells[i, 18];
-                    PopulateExcel(rVaultedFileName,
-                        rState,
-                        rRevision,
-                        rFileType,
-                        rVaulted,
-                        rVaultLocation,
-                        rTitle,
-                        rDrawingRevision,
-                        rLegacyDrawingNumber,
-                        rConstraintCount,
-                        rFeatureCount,
-                        rParameterCount,
-                        rOccurrenceCount,
-                        rMaterial);
-                    selectedfile = null;
                 }
             }
         }
@@ -519,11 +550,9 @@ namespace QueryVault
             {
                 rFileType.Value2 = "Part";
                 //only bother with material for part files.
-                //PropInst materialPropInst = ServiceManager.PropertyService.GetProperties("FILE", new long[] { selectedfile.File.EntityIterationId }, new long[] { materialPropDef.Id }).First();
                 if (selectedfile.Material != string.Empty)
                 {
                     rMaterial.Value2 = selectedfile.Material;
-                    //rMaterial.Value2 = materialPropInst.Val;
                 }
                 else
                 {
@@ -545,14 +574,10 @@ namespace QueryVault
                 #region Is Vaulted
                 //change the font to Wingdings
                 rVaulted.Font.Name = "Wingdings";
-                //set the value to the right character to present a tick.
                 rVaulted.Value2 = ((char)0xFC).ToString();
-                //need to perform a check here for the vault we're signed into?
-                //MessageBox.Show(m_conn.Vault.ToString());
                 if (m_conn.Vault.ToString() == "Legacy Vault")
                 {
                     rVaultLocation.Value2 = selectedfile.Folder.FullName.ToString().Replace("/", "\\").Replace("$", "C:\\Legacy Vault Working Folder") + "\\" + selectedfile.File.EntityName;
-                    //rVaultLocation.Value2 = selectedfile.folder.FullName.ToString().Replace("/", "\\").Replace("$", "C:\\Legacy Vault Working Folder") + "\\" + selectedfile.File.EntityName;
                 }
                 else
                 {
@@ -561,12 +586,9 @@ namespace QueryVault
                 //deals with pulling title, rev number & subject values from the vaulted parts.
                 if (rTitle.Value2 == "" || rTitle.Value2 == null)
                 {
-                    //PropInst titlePropInst = ServiceManager.PropertyService.GetProperties("FILE", new long[] { selectedfile.File.EntityIterationId }, new long[] { titlePropDef.Id }).First();
-                    //if (titlePropInst.Val != null)
-                    if(selectedfile.Title != null)
+                    if(selectedfile.Title != string.Empty)
                     {
                         rTitle.Value2 = selectedfile.Title;
-                        //rTitle.Value2 = titlePropInst.Val;
                     }
                     else
                     {
@@ -575,11 +597,9 @@ namespace QueryVault
                 }
                 if (rDrawingRevision.Value2 == "" || rDrawingRevision.Value2 == null)
                 {
-                    //PropInst revNumberPropInst = ServiceManager.PropertyService.GetProperties("FILE", new long[] { selectedfile.File.EntityIterationId }, new long[] { revNumberPropDef.Id }).First();
-                    if (selectedfile.RevNumber != null)
+                    if (selectedfile.RevNumber != string.Empty)
                     {
                         rDrawingRevision.Value2 = selectedfile.RevNumber;
-                        //rDrawingRevision.Value2 = revNumberPropInst.Val;
                     }
                     else
                     {
@@ -588,18 +608,16 @@ namespace QueryVault
                 }
                 if (rLegacyDrawingNumber.Value2 == "" || rLegacyDrawingNumber.Value2 == null)
                 {
-                    //PropInst legacyDrawingNumberPropInst = ServiceManager.PropertyService.GetProperties("FILE", new long[] { selectedfile.File.EntityIterationId }, new long[] { legacyDwgNumPropDef.Id }).First();
-                    if (selectedfile.LegacyDrawingNumber != null)
+                    if (selectedfile.LegacyDrawingNumber != string.Empty)
                     {
                         rLegacyDrawingNumber.Value2 = selectedfile.LegacyDrawingNumber;
-                        //rLegacyDrawingNumber.Value2 = legacyDrawingNumberPropInst.Val;
                     }
                     else
                     {
                         rLegacyDrawingNumber.Value2 = "No Legacy Drawing Number (Subject) iProperty Found!";
                     }
                 }
-                if (selectedfile.FeatureCount != null)
+                if (selectedfile.FeatureCount > 0)
                 {
                     rFeatureCount.Value2 = selectedfile.FeatureCount;
                 }
@@ -607,8 +625,7 @@ namespace QueryVault
                 {
                     rFeatureCount.Value2 = 0;
                 }
-                //rFeatureCount.Value2 = selectedfile.FeatureCount.ToString();
-                if (selectedfile.ParameterCount != null)
+                if (selectedfile.ParameterCount > 0)
                 {
                     rParameterCount.Value2 = selectedfile.ParameterCount;
                 }
@@ -616,7 +633,7 @@ namespace QueryVault
                 {
                     rParameterCount.Value2 = 0;
                 }
-                if (selectedfile.OccurrenceCount != null)
+                if (selectedfile.OccurrenceCount > 0)
                 {
                     rOccurrenceCount.Value2 = selectedfile.OccurrenceCount;
                 }
@@ -624,7 +641,7 @@ namespace QueryVault
                 {
                     rOccurrenceCount.Value2 = 0;
                 }
-                if (selectedfile.ConstraintCount != null)
+                if (selectedfile.ConstraintCount > 0)
                 {
                     rConstraintCount.Value2 = selectedfile.ConstraintCount;
                 }
@@ -836,9 +853,11 @@ namespace QueryVault
                         }
                     }
                 }
-                fileIterations = new List<FileIteration>(MyResults.Select(result => new VDF.Vault.Currency.Entities.FileIteration(m_conn, result)));
-                propValues =
-                    m_conn.PropertyManager.GetPropertyValues(fileIterations, new VDF.Vault.Currency.Properties.PropertyDefinition[] { 
+                try
+                {
+                    fileIterations = new List<FileIteration>(MyResults.Select(result => new VDF.Vault.Currency.Entities.FileIteration(m_conn, result)));
+                    propValues =
+                        m_conn.PropertyManager.GetPropertyValues(fileIterations, new VDF.Vault.Currency.Properties.PropertyDefinition[] { 
                         myUDP_FeatureCountPropDefinition, 
                         myUDP_OccurrenceCountPropDefinition, 
                         myUDP_ParameterCountPropDefinition, 
@@ -848,20 +867,49 @@ namespace QueryVault
                         revNumberPropDefinition,
                         titlePropDefinition
                     }, null);
-                folderIdsToFolderEntities = m_conn.FolderManager.GetFoldersByIds(fileIterations.Select(file => file.FolderId));
-                foreach (FileIteration file in fileIterations)
+                    folderIdsToFolderEntities = m_conn.FolderManager.GetFoldersByIds(fileIterations.Select(file => file.FolderId));
+                    foreach (FileIteration file in fileIterations)
+                    {
+                        ListBoxFileItem fileItem = new ListBoxFileItem(new VDF.Vault.Currency.Entities.FileIteration(m_conn, file));
+                        fileItem.folder = folderIdsToFolderEntities.Select(m => m).Where(kvp => kvp.Key == file.FolderId).Select(k => k.Value).First();
+                        fileItem.ConstraintCount = Convert.ToInt32(propValues.GetValue(file, myUDP_ConstraintCountPropDefinition));
+                        fileItem.FeatureCount = Convert.ToInt32(propValues.GetValue(file, myUDP_FeatureCountPropDefinition));
+                        fileItem.OccurrenceCount = Convert.ToInt32(propValues.GetValue(file, myUDP_OccurrenceCountPropDefinition));
+                        fileItem.ParameterCount = Convert.ToInt32(propValues.GetValue(file, myUDP_ParameterCountPropDefinition));
+                        if (propValues.GetValue(file, legacyDwgNumPropDefinition) != null)
+                        {
+                            fileItem.LegacyDrawingNumber = propValues.GetValue(file, legacyDwgNumPropDefinition).ToString();
+                        }
+                        else
+                        {
+                            fileItem.LegacyDrawingNumber = "";
+                        }
+                        
+                        if (fileItem.File.EntityName.EndsWith(".ipt"))
+                        {
+                            fileItem.Material = propValues.GetValue(file, materialPropDefinition).ToString();
+                        }
+                        else
+                        {
+                            fileItem.Material = "";
+                        }
+                        if (propValues.GetValue(file, revNumberPropDefinition) != null)
+                        {
+                            fileItem.RevNumber = propValues.GetValue(file, revNumberPropDefinition).ToString();    
+                        }
+                        else
+                        {
+                            fileItem.RevNumber = "";
+                        }
+                        
+                        fileItem.Title = propValues.GetValue(file, titlePropDefinition).ToString();
+                        FoundList.Add(fileItem);
+                    }
+                }
+                catch (Exception ex)
                 {
-                    ListBoxFileItem fileItem = new ListBoxFileItem(new VDF.Vault.Currency.Entities.FileIteration(m_conn, file));
-                    fileItem.folder = folderIdsToFolderEntities.Select(m => m).Where(kvp => kvp.Key == file.FolderId).Select(k => k.Value).First();
-                    fileItem.ConstraintCount = Convert.ToInt32(propValues.GetValue(file, myUDP_ConstraintCountPropDefinition));
-                    fileItem.FeatureCount = Convert.ToInt32(propValues.GetValue(file, myUDP_FeatureCountPropDefinition));
-                    fileItem.OccurrenceCount = Convert.ToInt32(propValues.GetValue(file, myUDP_OccurrenceCountPropDefinition));
-                    fileItem.ParameterCount = Convert.ToInt32(propValues.GetValue(file, myUDP_ParameterCountPropDefinition));
-                    fileItem.LegacyDrawingNumber = propValues.GetValue(file, legacyDwgNumPropDefinition).ToString();
-                    fileItem.Material = propValues.GetValue(file, materialPropDefinition).ToString();
-                    fileItem.RevNumber = propValues.GetValue(file, revNumberPropDefinition).ToString();
-                    fileItem.Title = propValues.GetValue(file, titlePropDefinition).ToString();
-                    FoundList.Add(fileItem);
+                    MessageBox.Show("the error was: " + ex.Message + " " + ex.StackTrace);
+                    throw;
                 }
             }
         }
