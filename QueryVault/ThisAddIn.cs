@@ -60,6 +60,7 @@ namespace QueryVault
 		public List<ListBoxFileItem> FoundList;
         public List<Autodesk.Connectivity.WebServices.File> fileList;
         public List<VDF.Vault.Currency.Entities.FileIteration> fileIterations;
+        public List<Results> ExcelRangeResults;
         public VDF.Vault.Currency.Properties.PropertyValues propValues;
         public IDictionary<long, VDF.Vault.Currency.Entities.Folder> folderIdsToFolderEntities;
 		#endregion
@@ -110,11 +111,6 @@ namespace QueryVault
                         return;
                     }
 
-                    //property definitions retrieved from Vault Settings -> Behaviours Tab -> Properties screen and the "System Name" column in the resulting table.
-                    //PropDef materialPropDef = ServiceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE").First(propDef => propDef.SysName.Equals("Material"));
-                    //PropDef titlePropDef = ServiceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE").First(propDef => propDef.SysName.Equals("Title"));
-                    //PropDef revNumberPropDef = ServiceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE").First(propDef => propDef.SysName.Equals("RevNumber"));
-                    //PropDef legacyDwgNumPropDef = ServiceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE").First(propDef => propDef.SysName.Equals("Subject"));
                     //an FYI for possible future usage:
                     //Comments sysname = Comments
                     //Description sysname = Description
@@ -126,34 +122,47 @@ namespace QueryVault
 
                     Excel.Range range = ws.UsedRange;
                     int usedCount = 0;
+                    ExcelRangeResults = new List<Results>();
+                    string[,] RangeValues = new string[range.Rows.Count, 2];
                     string[] VaultedRangeValues = new string[range.Rows.Count];
                     string[] NonVaultedRangeValues = new string[range.Rows.Count];
                     for (int i = 3; i < range.Rows.Count; i++)
                     {
-                        Excel.Range rFileName = range.Cells[i, 2];
+                        Results result = new Results();
+                        Excel.Range rDwgNum = range.Cells[i, 2];
                         Excel.Range rVaultedName = range.Cells[i, 3];
-                        string str = rFileName.Value2; //!= null ? r.Value2.ToString() : "";
+                        string str = rDwgNum.Value2;
                         if (str != null)
                         {
                             usedCount++;
-                            NonVaultedRangeValues[i] = str;
+                            result.dwgnum = str;  
                         }
                         string vaultedNameStr = rVaultedName.Value2;
                         if (vaultedNameStr != null)
                         {
-                            VaultedRangeValues[i] = vaultedNameStr;
+                            result.filename = vaultedNameStr;
                         }
+                        ExcelRangeResults.Add(result);
                     }
                     //remove null entries from our arrays.
+                    
+                    VaultedRangeValues = (from Results f in ExcelRangeResults
+                                          where !string.IsNullOrEmpty(f.filename)
+                                          select f.filename).ToArray();
                     VaultedRangeValues = VaultedRangeValues.Where(x => !string.IsNullOrEmpty(x)).ToArray();
+                    NonVaultedRangeValues = (from Results f in ExcelRangeResults
+                                             where string.IsNullOrEmpty(f.filename)
+                                             select f.dwgnum).ToArray();
                     NonVaultedRangeValues = NonVaultedRangeValues.Where(x => !string.IsNullOrEmpty(x)).ToArray();
                     FoundList = new List<ListBoxFileItem>();
-                    if (VaultedRangeValues.Length > 0) //need to think about this distinction a bit more as it will currently ignore files that aren't already vaulted.
+                    if (VaultedRangeValues.Length > 0) 
                     {
+                        UpdateStatusBar("Herding Cats... Please Wait");
                         UpdateExcel(VaultedRangeValues, range, usedCount);
                     }
-                    else
+                    if (NonVaultedRangeValues.Length > 0)
                     {
+                        UpdateStatusBar("Tormenting herded Cats with laser pointers... Please Wait");
                         BeginPopulateExcel(NonVaultedRangeValues, range, usedCount);
                     }
                     //reset calculation
@@ -170,7 +179,12 @@ namespace QueryVault
             Application.StatusBar = false;
             Application.DisplayStatusBar = OldStatus;
             Vault.Library.ConnectionManager.CloseAllConnections();
-            
+            MessageBox.Show("Completed!");
+        }
+
+        private void UpdateStatusBar(string Message)
+        {
+            Application.StatusBar = Message;
         }
 
         private void BeginPopulateExcel(string[] NonVaultedRangeValues, Excel.Range range, int usedCount)
@@ -190,7 +204,7 @@ namespace QueryVault
                     results = fileList.FindAll(x => x.Name.EndsWith(".pdf")); //specifically .pdf
                 }
             }
-            for (int i = 3; i < range.Rows.Count; i++)
+            for (int i = 3; i < usedCount + 2; i++)
             {
                 double percent = ((double)i / usedCount);
                 UpdateStatusBar(percent, "Getting Initial File details (If available) From Vault... Please Wait");
@@ -325,6 +339,8 @@ namespace QueryVault
             SrchCond[] conditions = new SrchCond[NonVaultedRangeValues.Length];
             for (int i = 0; i < NonVaultedRangeValues.Length; i++)
             {
+                double percent = ((double)i / NonVaultedRangeValues.Length);
+                UpdateStatusBar(percent, "Building Initial Search Conditions... Please Wait");
                 SrchCond searchCondition = new SrchCond();
                 searchCondition.PropDefId = 9; //filename
                 searchCondition.PropTyp = PropertySearchType.SingleProperty;
@@ -367,7 +383,7 @@ namespace QueryVault
         {
             DoSearch(VaultedRangeValues);
             
-            for (int i = 3; i < range.Rows.Count; i++)
+            for (int i = 3; i < usedCount + 2; i++)
             {
                 double percent = ((double)i / usedCount);
                 UpdateStatusBar(percent, "Updating File Status From Vault... Please Wait");
@@ -409,115 +425,22 @@ namespace QueryVault
             }
         }
         /// <summary>
-        /// Begins our population of Excel
-        /// Refactored on 2015-03-19 to simplify/reuse parts of the code.
+        /// Populates our Excel sheet with the found values.
         /// </summary>
-        /// <param name="materialPropDef"></param>
-        /// <param name="titlePropDef"></param>
-        /// <param name="revNumberPropDef"></param>
-        /// <param name="legacyDwgNumPropDef"></param>
-        /// <param name="range"></param>
-        /// <param name="usedCount"></param>
-        private void BeginPopulateExcel(Excel.Range range, 
-            int usedCount)
-        {
-            for (int i = 3; i < range.Rows.Count; i++) //need to start at row 3 accounting for headers and such-like.
-            {
-                double percent = ((double)i / usedCount);
-                UpdateStatusBar(percent, "Updating File Status From Vault... Please Wait");
-                Excel.Range r = range.Cells[i, 2]; //column B
-                string str = r.Value2 != null ? r.Value2.ToString() : "";
-                //string str = r.get_Value(Excel.XlRangeValueDataType.xlRangeValueDefault).ToString();
-                //debugging
-                if (str != string.Empty)
-                {
-                    //MessageBox.Show("Drawing number= " + str);
-                    Match match;
-                    if (pdf)
-                    {
-                        match = Regex.Match(str, @"(.*)(\w{2}-\d{5,}|\w{2}-\w\d{5,})(.*)", RegexOptions.IgnoreCase); //pdfs don't (normally) have -000 at the end of the filename
-                    }
-                    else // .ipt or .iam
-                    {
-                        match = Regex.Match(str, @"(.*)(\w{2}-\d{5,}-000|\w{2}-\w\d{5,}-000)(.*)", RegexOptions.IgnoreCase);
-                    }
-
-                    if (match.Success)
-                    {
-                        //search for the drawing number in the vault
-                        if (match.Groups[2].Captures.Count > 0)
-                        {
-                            Console.WriteLine("Drawing number matches the ###### or A##### pattern : " + match.Groups[2].ToString());
-                            str = match.Groups[2].ToString();
-                        }
-
-                        Excel.Range rVaultedFileName;
-
-                        if (pdf)
-                        {
-                            rVaultedFileName = range.Cells[i, 1]; //pdf
-                        }
-                        else
-                        {
-                            rVaultedFileName = range.Cells[i, 3]; //Inventor
-                        }
-
-                        Excel.Range rState = range.Cells[i, 4];
-                        Excel.Range rRevision = range.Cells[i, 5];
-                        Excel.Range rFileType = range.Cells[i, 6];
-                        //skip Assemblies when we're looking for pdfs for the time being.
-                        if (pdf)
-                        {
-                            if (rFileType.Value2 == "Assembly")
-                            {
-                                continue;
-                            }
-                        }
-
-                        Excel.Range rVaulted = range.Cells[i, 7];
-                        Excel.Range rVaultLocation = range.Cells[i, 10];
-                        Excel.Range rTitle = range.Cells[i, 11];
-                        Excel.Range rDrawingRevision = range.Cells[i, 12];
-                        Excel.Range rLegacyDrawingNumber = range.Cells[i, 13];
-                        Excel.Range rConstraintCount = range.Cells[i, 14];
-                        Excel.Range rFeatureCount = range.Cells[i, 15];
-                        Excel.Range rParameterCount = range.Cells[i, 16];
-                        Excel.Range rOccurrenceCount = range.Cells[i, 17];
-                        Excel.Range rMaterial = range.Cells[i, 18];
-
-                        rVaultedFileName.Select();
-                        //rVaultLocation.Select(); //scroll with the active cell
-
-                        string vaultedName = rVaultedFileName.Value2 != null ? rVaultedFileName.Value2.ToString() : string.Empty;
-                        DoSearch(str, vaultedName);
-
-                        if (NoMatch == false && selectedfile != null)
-                        {
-                            FoundList.Add(selectedfile);
-                            PopulateExcel(rVaultedFileName, rState, rRevision, rFileType, rVaulted, rVaultLocation, rTitle, rDrawingRevision, rLegacyDrawingNumber, rConstraintCount, rFeatureCount, rParameterCount, rOccurrenceCount, rMaterial);
-
-                            NoMatch = true;
-                            selectedfile = null;
-                        }
-                        else if (NoMatch == true) //need to mark the "VAULTED" Column with a Cross
-                        {
-                            #region Is NOT Vaulted
-                            rState.Value2 = "NA";
-                            rRevision.Value2 = "NA";
-                            //change the font to Wingdings
-                            rVaulted.Font.Name = "Wingdings";
-                            //set the value to the right character to present a tick.
-                            rVaulted.Value2 = ((char)0xFB).ToString();
-                            #endregion
-                            //reset the NoMatch bool & selectedfile
-                            NoMatch = true;
-                            selectedfile = null;
-                        }
-                    }
-                }
-            }
-        }
-
+        /// <param name="rVaultedFileName"></param>
+        /// <param name="rState"></param>
+        /// <param name="rRevision"></param>
+        /// <param name="rFileType"></param>
+        /// <param name="rVaulted"></param>
+        /// <param name="rVaultLocation"></param>
+        /// <param name="rTitle"></param>
+        /// <param name="rDrawingRevision"></param>
+        /// <param name="rLegacyDrawingNumber"></param>
+        /// <param name="rConstraintCount"></param>
+        /// <param name="rFeatureCount"></param>
+        /// <param name="rParameterCount"></param>
+        /// <param name="rOccurrenceCount"></param>
+        /// <param name="rMaterial"></param>
         private void PopulateExcel(Excel.Range rVaultedFileName, 
             Excel.Range rState, 
             Excel.Range rRevision, 
@@ -653,179 +576,13 @@ namespace QueryVault
                 //reset the NoMatch bool & selectedfile
             }
         }
-		///Updates the statusbar with a percentage so we can see how far along we are.
+		
+        ///Updates the statusbar with a percentage so we can see how far along we are.
         public void UpdateStatusBar(double percent, string Message = "")
         {
             Application.StatusBar = Message + " (" + percent.ToString("P1") + ")";
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="p"></param>
-        /// <param name="VaultedFileName"></param>
-        private void DoSearch(string p, string VaultedFileName)
-        {
-            SrchCond searchCondition = new SrchCond();
-            searchCondition.PropDefId = 9; //filename
-            bool searchedAlready = false;
-            if (VaultedFileName != string.Empty)
-            {
-                searchedAlready = true;
-                searchCondition.PropTyp = PropertySearchType.SingleProperty;
-                searchCondition.SrchOper = 3; //equals
-                searchCondition.SrchTxt = VaultedFileName; //our filename
-            }
-            else
-            {
-                searchCondition.PropTyp = PropertySearchType.SingleProperty;
-                searchCondition.SrchOper = 1; //contains
-                searchCondition.SrchTxt = p; //our drawing number
-            }
-
-            SrchCond[] conditions = new SrchCond[1];
-
-            conditions[0] = searchCondition;
-
-            string bookmark = string.Empty;
-            SrchStatus status = null;
-
-            //search for files
-            List<Autodesk.Connectivity.WebServices.File> fileList = new List<Autodesk.Connectivity.WebServices.File>();
-           
-            if (!pdf)
-            {
-                PropertyDefinitionDictionary props =
-                m_conn.PropertyManager.GetPropertyDefinitions(VDF.Vault.Currency.Entities.EntityClassIds.Files, null, PropertyDefinitionFilter.IncludeAll);
-                
-                foreach (var myKeyValuePair in props)
-                {
-                    propDefinition = myKeyValuePair.Value;
-                    switch (propDefinition.DisplayName)
-                    {
-                        case "FeatureCount":
-                            myUDP_FeatureCountPropDefinition = propDefinition;
-                            break;
-                        case "OccurrenceCount":
-                            myUDP_OccurrenceCountPropDefinition = propDefinition;
-                            break;
-                        case "ParameterCount":
-                            myUDP_ParameterCountPropDefinition = propDefinition;
-                            break;
-                        case "ConstraintCount":
-                            myUDP_ConstraintCountPropDefinition = propDefinition;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-            
- 
-            while (status == null || fileList.Count < status.TotalHits)
-            {
-                Autodesk.Connectivity.WebServices.File[] files = m_conn.WebServiceManager.DocumentService.FindFilesBySearchConditions(
-                    conditions, null, null, true, true,
-                    ref bookmark, out status);
-
-                if (files != null)
-                    fileList.AddRange(files);
-            }
-            if (fileList.Count > 0)
-            {
-                /*we have a match in Vault for our drawing number 
-                 now we need to decide whether we completely automate the next step or allow the user to select the expected file.
-                 */
-                /*ideally, if we search the fileList object we should find at least one .ipt or .iam if we find neither, we can safely assume the file hasn't been vaulted yet! */
-                
-                if (searchedAlready)
-                {
-                    foreach (Autodesk.Connectivity.WebServices.File file in fileList)
-                    {
-                        ListBoxFileItem fileItem = new ListBoxFileItem(new VDF.Vault.Currency.Entities.FileIteration(m_conn, file));
-                        //User Defined Properties - add more as necessary
-                        if (!pdf)
-                        {
-                            fileItem.FeatureCount = Convert.ToInt32(m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_FeatureCountPropDefinition, null));
-                            fileItem.OccurrenceCount = Convert.ToInt32(m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_OccurrenceCountPropDefinition, null));
-                            fileItem.ParameterCount = Convert.ToInt32(m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_ParameterCountPropDefinition, null));
-                        }
-                        Globals.ThisAddIn.NoMatch = false;
-                        Globals.ThisAddIn.selectedfile = fileItem;
-                        //we should only be returning one file because we're searching for it directly!
-                        return;
-                    }
-                }
-                else
-                {
-                    List<Autodesk.Connectivity.WebServices.File> results;
-                    if (!Globals.ThisAddIn.pdf)
-                    {
-                        fileList.RemoveAll(StartsReplaceWith); //bin those files which start "Replace With"
-                        fileList.RemoveAll(ContainsUnderscores);
-                        results = fileList.FindAll(x => x.Name.EndsWith(".ipt") || x.Name.EndsWith(".iam")); //ignore .pdf
-                    }
-                    else
-                    {
-                        results = fileList.FindAll(x => x.Name.EndsWith(".pdf")); //specifically .pdf
-                    }
-                    
-                    if (results.Count > 1)
-                    {
-                        foreach (Autodesk.Connectivity.WebServices.File file in results)
-                        {
-                            ListBoxFileItem findfile = new ListBoxFileItem(new VDF.Vault.Currency.Entities.FileIteration(m_conn, file));
-                            if (Globals.ThisAddIn.FoundList.Contains(findfile))
-                            {
-                                Globals.ThisAddIn.NoMatch = false;
-                                Globals.ThisAddIn.selectedfile = findfile;
-                                return;
-                            }
-                        }
-                        //we have multiple to choose from and should get the user to pick
-                        //create a form object to display found items
-                        string selectedfilename = string.Empty;
-                        FileSelectionForm fileForm = new FileSelectionForm(m_conn);
-                        //iterate through found files and display them in the search results list box
-                        foreach (Autodesk.Connectivity.WebServices.File file in results)
-                        {
-                            ListBoxFileItem fileItem = new ListBoxFileItem(new VDF.Vault.Currency.Entities.FileIteration(m_conn, file));
-                            fileForm.m_searchResultsListBox.Items.Add(fileItem);
-                        }
-                        //update the items count label
-                        fileForm.m_SearchingForLabel.Text = "Searching for filename(s) containing: " + p;
-                        fileForm.m_itemsCountLabel.Text = (results.Count > 0) ? results.Count + " Items" : "0 Items";
-                        //display the form and wait for it to close using the ShowDialog() method.
-                        fileForm.ShowDialog();
-
-                    }
-                    else if (results.Count == 1)
-                    {
-                        //get the first and only file we found whose name contains .iam or .ipt
-                        Autodesk.Connectivity.WebServices.File foundfile = results[0];
-                        ListBoxFileItem fileItem = new ListBoxFileItem(new VDF.Vault.Currency.Entities.FileIteration(m_conn, foundfile));
-                        //VDF.Vault.Currency.Entities.Folder folder = m_conn.WebServiceManager.DocumentService.GetFolderById(foundfile.FolderId);
-                        //fileItem.folder = folder;
-                        //User Defined Properties - add more as necessary
-                        if (!pdf)
-                        {
-                            fileItem.FeatureCount = Convert.ToInt32(m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_FeatureCountPropDefinition, null));
-                            fileItem.OccurrenceCount = Convert.ToInt32(m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_OccurrenceCountPropDefinition, null));
-                            fileItem.ParameterCount = Convert.ToInt32(m_conn.PropertyManager.GetPropertyValue(fileItem.File, myUDP_ParameterCountPropDefinition, null));
-                        }
-                        Globals.ThisAddIn.NoMatch = false;
-                        Globals.ThisAddIn.selectedfile = fileItem;
-                        return;
-                                            }
-                    else //no matches or all .pdf files
-                    {
-                        Globals.ThisAddIn.NoMatch = true;
-                    }
-                }
-                
-            }
-        }
-        
         /// <summary>
         /// Here is a (hopefully!) much faster approach for updating the properties of the files we want to query.
         /// It avoids querying the Vault server in a ForEach loop which is really slow once we've run the tool to populate the spreadsheet.
@@ -868,8 +625,11 @@ namespace QueryVault
                         titlePropDefinition
                     }, null);
                     folderIdsToFolderEntities = m_conn.FolderManager.GetFoldersByIds(fileIterations.Select(file => file.FolderId));
+                    int i = 0;
                     foreach (FileIteration file in fileIterations)
                     {
+                        double percent = ((double)i / fileIterations.Count);
+                        UpdateStatusBar(percent, "Retrieving Properties... Please Wait");
                         ListBoxFileItem fileItem = new ListBoxFileItem(new VDF.Vault.Currency.Entities.FileIteration(m_conn, file));
                         fileItem.folder = folderIdsToFolderEntities.Select(m => m).Where(kvp => kvp.Key == file.FolderId).Select(k => k.Value).First();
                         fileItem.ConstraintCount = Convert.ToInt32(propValues.GetValue(file, myUDP_ConstraintCountPropDefinition));
@@ -904,6 +664,7 @@ namespace QueryVault
                         
                         fileItem.Title = propValues.GetValue(file, titlePropDefinition).ToString();
                         FoundList.Add(fileItem);
+                        i++;
                     }
                 }
                 catch (Exception ex)
@@ -984,9 +745,6 @@ namespace QueryVault
                 var thispdf = (from file in dir.GetFiles("*.pdf", SearchOption.AllDirectories)
                               where file.Name == pdfName
                               select file).First();
-                //string thispdf = from string[] a in System.IO.Directory.GetFiles(dir.FullName,"*.pdf",SearchOption.AllDirectories)
-                //                    where a.Equals(pdfName)
-                //                    select a;
                 if (thispdf != null)
                 {
                     return thispdf.DirectoryName + "\\" + thispdf.Name;
@@ -1020,8 +778,6 @@ namespace QueryVault
                 {
                     m_client.Connect();
                     connected = true;
-                    //listBox1.Items.Add("Connected to DDE");
-                    //listBox1.Refresh();
                 }
                 catch (DdeException)
                 {
@@ -1035,8 +791,6 @@ namespace QueryVault
                     tryStart = !tryStart;
                 }
             } while (!connected && tryStart);
-            //Excel.Application ExApp = Globals.ThisAddIn.Application as Microsoft.Office.Interop.Excel.Application;
-            //Excel.Range SelectedRange = ExApp.Selection as Microsoft.Office.Interop.Excel.Range;
             Excel.Workbook wb = Globals.ThisAddIn.Application.ActiveWorkbook;
             Excel._Worksheet ws = wb.ActiveSheet;
             if (!ws.Name.Contains("MODELLING"))
