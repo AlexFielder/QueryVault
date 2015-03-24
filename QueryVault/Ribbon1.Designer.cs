@@ -37,24 +37,25 @@
             this.tab1 = this.Factory.CreateRibbonTab();
             this.group1 = this.Factory.CreateRibbonGroup();
             this.QueryVault = this.Factory.CreateRibbonButton();
+            this.group2 = this.Factory.CreateRibbonGroup();
             this.FindVaultedPdf = this.Factory.CreateRibbonButton();
             this.PrintSelectedPdfs = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
+            this.group2.SuspendLayout();
             // 
             // tab1
             // 
             this.tab1.ControlId.ControlIdType = Microsoft.Office.Tools.Ribbon.RibbonControlIdType.Office;
             this.tab1.Groups.Add(this.group1);
+            this.tab1.Groups.Add(this.group2);
             this.tab1.Label = "TabAddIns";
             this.tab1.Name = "tab1";
             // 
             // group1
             // 
             this.group1.Items.Add(this.QueryVault);
-            this.group1.Items.Add(this.FindVaultedPdf);
-            this.group1.Items.Add(this.PrintSelectedPdfs);
-            this.group1.Label = "group1";
+            this.group1.Label = "Vault Query";
             this.group1.Name = "group1";
             // 
             // QueryVault
@@ -63,8 +64,16 @@
             this.QueryVault.Name = "QueryVault";
             this.QueryVault.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.QueryVault_Click);
             // 
+            // group2
+            // 
+            this.group2.Items.Add(this.FindVaultedPdf);
+            this.group2.Items.Add(this.PrintSelectedPdfs);
+            this.group2.Label = "PDF Functions";
+            this.group2.Name = "group2";
+            // 
             // FindVaultedPdf
             // 
+            this.FindVaultedPdf.Enabled = false;
             this.FindVaultedPdf.Label = "Find Vaulted pdf";
             this.FindVaultedPdf.Name = "FindVaultedPdf";
             this.FindVaultedPdf.ScreenTip = "...For each .ipt file in our spreadsheet and add a link back to it from the sprea" +
@@ -73,6 +82,7 @@
             // 
             // PrintSelectedPdfs
             // 
+            this.PrintSelectedPdfs.Enabled = false;
             this.PrintSelectedPdfs.Label = "Print Selected PDFs";
             this.PrintSelectedPdfs.Name = "PrintSelectedPdfs";
             this.PrintSelectedPdfs.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.PrintSelectedPdfs_Click);
@@ -87,6 +97,8 @@
             this.tab1.PerformLayout();
             this.group1.ResumeLayout(false);
             this.group1.PerformLayout();
+            this.group2.ResumeLayout(false);
+            this.group2.PerformLayout();
 
         }
 
@@ -97,6 +109,7 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonButton QueryVault;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton FindVaultedPdf;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton PrintSelectedPdfs;
+        internal Microsoft.Office.Tools.Ribbon.RibbonGroup group2;
     }
 
     partial class ThisRibbonCollection

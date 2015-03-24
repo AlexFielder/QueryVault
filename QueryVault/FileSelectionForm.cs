@@ -27,15 +27,17 @@ namespace QueryVault
         private void button1_Click(object sender, EventArgs e)
         {
             ListBoxFileItem selectedfileitem = (ListBoxFileItem)m_searchResultsListBox.SelectedItem;
-            Autodesk.Connectivity.WebServices.Folder folder = Globals.ThisAddIn.m_conn.WebServiceManager.DocumentService.GetFolderById(selectedfileitem.File.FolderId);
-            selectedfileitem.folder = folder;
+            List<VDF.Vault.Currency.Entities.FileIteration> fileIterations = new List<VDF.Vault.Currency.Entities.FileIteration>();
+            fileIterations.Add(selectedfileitem.File);
+            IDictionary<long, VDF.Vault.Currency.Entities.Folder> folderIdsToFolderEntities = Globals.ThisAddIn.m_conn.FolderManager.GetFoldersByIds(fileIterations.Select(file => file.FolderId));
+            selectedfileitem.folder = folderIdsToFolderEntities.Select(m => m).Where(kvp => kvp.Key == selectedfileitem.File.FolderId).Select(k => k.Value).First(); 
             //User Defined Properties - add more as necessary
-            if (!Globals.ThisAddIn.pdf)
-            {
-                selectedfileitem.FeatureCount = Globals.ThisAddIn.m_conn.PropertyManager.GetPropertyValue(selectedfileitem.File, Globals.ThisAddIn.myUDP_FeatureCount, null);
-                selectedfileitem.OccurrenceCount = Globals.ThisAddIn.m_conn.PropertyManager.GetPropertyValue(selectedfileitem.File, Globals.ThisAddIn.myUDP_OccurrenceCount, null);
-                selectedfileitem.ParameterCount = Globals.ThisAddIn.m_conn.PropertyManager.GetPropertyValue(selectedfileitem.File, Globals.ThisAddIn.myUDP_ParameterCount, null);
-            }
+            //if (!Globals.ThisAddIn.pdf)
+            //{
+            //    selectedfileitem.FeatureCount = Convert.ToInt32(Globals.ThisAddIn.m_conn.PropertyManager.GetPropertyValue(selectedfileitem.File, Globals.ThisAddIn.myUDP_FeatureCountPropDefinition, null));
+            //    selectedfileitem.OccurrenceCount = Convert.ToInt32(Globals.ThisAddIn.m_conn.PropertyManager.GetPropertyValue(selectedfileitem.File, Globals.ThisAddIn.myUDP_OccurrenceCountPropDefinition, null));
+            //    selectedfileitem.ParameterCount = Convert.ToInt32(Globals.ThisAddIn.m_conn.PropertyManager.GetPropertyValue(selectedfileitem.File, Globals.ThisAddIn.myUDP_ParameterCountPropDefinition, null));
+            //}
             if (selectedfileitem !=null)
             {
                 Globals.ThisAddIn.NoMatch = false;
