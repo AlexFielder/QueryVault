@@ -103,6 +103,7 @@ namespace QueryVault
                     Excel.Application excelapp = Globals.ThisAddIn.Application;
                     //set calculation to manual
                     excelapp.Calculation = Excel.XlCalculation.xlCalculationManual;
+                    excelapp.ScreenUpdating = false;
                     Excel.Workbook wb = Globals.ThisAddIn.Application.ActiveWorkbook;
                     Excel._Worksheet ws = wb.ActiveSheet;
                     if (!ws.Name.Contains("MODELLING"))
@@ -167,6 +168,7 @@ namespace QueryVault
                     }
                     //reset calculation
                     excelapp.Calculation = Excel.XlCalculation.xlCalculationAutomatic;
+                    excelapp.ScreenUpdating = true;
                 }
                 catch (Exception ex)
                 {
