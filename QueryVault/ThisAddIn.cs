@@ -663,8 +663,10 @@ namespace QueryVault
                         {
                             fileItem.RevNumber = "";
                         }
-                        
-                        fileItem.Title = propValues.GetValue(file, titlePropDefinition).ToString();
+                        if (propValues.GetValue(file, titlePropDefinition) != null)
+                        {
+                            fileItem.Title = propValues.GetValue(file, titlePropDefinition).ToString();
+                        }
                         FoundList.Add(fileItem);
                         i++;
                     }
