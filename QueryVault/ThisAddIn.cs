@@ -520,6 +520,17 @@ namespace QueryVault
                         rTitle.Value2 = "No Title iProperty Found!";
                     }
                 }
+                else if (rTitle.Value2 != selectedfile.Title) //allows for changes/updates to vault information!
+                {
+                    if (selectedfile.Title != string.Empty)
+                    {
+                        rTitle.Value2 = selectedfile.Title;
+                    }
+                    else
+                    {
+                        rTitle.Value2 = "No Title iProperty Found!";
+                    }
+                }
                 if (rDrawingRevision.Value2 == "" || rDrawingRevision.Value2 == null)
                 {
                     if (selectedfile.RevNumber != string.Empty)
@@ -531,7 +542,29 @@ namespace QueryVault
                         rDrawingRevision.Value2 = "No Rev Number iProperty Found!";
                     }
                 }
+                else if (rDrawingRevision.Value2 != selectedfile.RevNumber)
+                {
+                    if (selectedfile.RevNumber != string.Empty)
+                    {
+                        rDrawingRevision.Value2 = selectedfile.RevNumber;
+                    }
+                    else
+                    {
+                        rDrawingRevision.Value2 = "No Rev Number iProperty Found!";
+                    }
+                }
                 if (rLegacyDrawingNumber.Value2 == "" || rLegacyDrawingNumber.Value2 == null)
+                {
+                    if (selectedfile.LegacyDrawingNumber != string.Empty)
+                    {
+                        rLegacyDrawingNumber.Value2 = selectedfile.LegacyDrawingNumber;
+                    }
+                    else
+                    {
+                        rLegacyDrawingNumber.Value2 = "No Legacy Drawing Number (Subject) iProperty Found!";
+                    }
+                }
+                else if (rLegacyDrawingNumber.Value2 != selectedfile.LegacyDrawingNumber)
                 {
                     if (selectedfile.LegacyDrawingNumber != string.Empty)
                     {
