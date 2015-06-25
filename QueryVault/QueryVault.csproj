@@ -34,7 +34,7 @@
     <PublishUrl>\\matrixserver\data\Software\Matrix\QueryVault\</PublishUrl>
     <InstallUrl>\\matrixserver\data\Software\Matrix\QueryVault\</InstallUrl>
     <TargetCulture>en</TargetCulture>
-    <ApplicationVersion>1.0.0.1</ApplicationVersion>
+    <ApplicationVersion>1.0.0.2</ApplicationVersion>
     <AutoIncrementApplicationRevision>true</AutoIncrementApplicationRevision>
     <UpdateEnabled>true</UpdateEnabled>
     <UpdateInterval>7</UpdateInterval>
@@ -259,10 +259,11 @@
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>QueryVault_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestKeyFile>
+    </ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>F77E694B9DDC983D9BEEFFF4876FDB56C42FA79C</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>9F45952E8B6A268AC19B491F8C3AFEFCD98DE8CB</ManifestCertificateThumbprint>
   </PropertyGroup>
   <!-- Include the build rules for a C# project. -->
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
