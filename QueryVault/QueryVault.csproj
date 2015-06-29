@@ -34,7 +34,7 @@
     <PublishUrl>\\matrixserver\data\Software\Matrix\QueryVault\</PublishUrl>
     <InstallUrl>\\matrixserver\data\Software\Matrix\QueryVault\</InstallUrl>
     <TargetCulture>en</TargetCulture>
-    <ApplicationVersion>1.0.0.2</ApplicationVersion>
+    <ApplicationVersion>1.0.0.5</ApplicationVersion>
     <AutoIncrementApplicationRevision>true</AutoIncrementApplicationRevision>
     <UpdateEnabled>true</UpdateEnabled>
     <UpdateInterval>7</UpdateInterval>

@@ -73,6 +73,17 @@ namespace QueryVault
 		{
 		}
 
+        enum CVErrEnum : int
+        {
+            ErrDiv0 = -2146826281,
+            ErrNA = -2146826246,
+            ErrName = -2146826259,
+            ErrNull = -2146826288,
+            ErrNum = -2146826252,
+            ErrRef = -2146826265,
+            ErrValue = -2146826273
+        }
+
 		#region VSTO generated code
 
 		/// <summary>
@@ -458,160 +469,176 @@ namespace QueryVault
             Excel.Range rOccurrenceCount, 
             Excel.Range rMaterial)
         {
-            if (selectedfile.File.EntityName.EndsWith(".iam"))
+            try
             {
-                if (selectedfile.File.EntityName.StartsWith("AS-"))
+                if (selectedfile.File.EntityName.EndsWith(".iam"))
                 {
-                    rFileType.Value2 = "Assembly";
-                    rMaterial.Value2 = "No Material Assigned or Required";
+                    if (selectedfile.File.EntityName.StartsWith("AS-"))
+                    {
+                        rFileType.Value2 = "Assembly";
+                        rMaterial.Value2 = "No Material Assigned or Required";
+                    }
+                    else if (selectedfile.File.EntityName.StartsWith("DT-"))
+                    {
+                        rFileType.Value2 = "Detail Assembly";
+                        rMaterial.Value2 = "No Material Assigned or Required";
+                    }
                 }
-                else if (selectedfile.File.EntityName.StartsWith("DT-"))
+                else if (selectedfile.File.EntityName.EndsWith(".ipt"))
                 {
-                    rFileType.Value2 = "Detail Assembly";
-                    rMaterial.Value2 = "No Material Assigned or Required";
+                    rFileType.Value2 = "Part";
+                    //only bother with material for part files.
+                    if (selectedfile.Material != string.Empty)
+                    {
+                        rMaterial.Value2 = selectedfile.Material;
+                    }
+                    else
+                    {
+                        rMaterial.Value2 = "No Material Assigned or Required";
+                    }
                 }
-            }
-            else if (selectedfile.File.EntityName.EndsWith(".ipt"))
-            {
-                rFileType.Value2 = "Part";
-                //only bother with material for part files.
-                if (selectedfile.Material != string.Empty)
-                {
-                    rMaterial.Value2 = selectedfile.Material;
-                }
-                else
-                {
-                    rMaterial.Value2 = "No Material Assigned or Required";
-                }
-            }
 
-            //add/update some information about the file in the Excel spreadsheet.
-            //storing the filename that was selected means we don't need to prompt the user to choose again.
-            rVaultedFileName.Value2 = selectedfile.File.EntityName.ToString();
-            if (pdf)
-            {
-                rVaultedFileName.Hyperlinks.Add(rVaultedFileName, FindLocalPdf(InventorProjectRootFolder, rVaultedFileName.Value2), Type.Missing, Type.Missing, Type.Missing);
+                //add/update some information about the file in the Excel spreadsheet.
+                //storing the filename that was selected means we don't need to prompt the user to choose again.
+                rVaultedFileName.Value2 = selectedfile.File.EntityName.ToString();
+                if (pdf)
+                {
+                    rVaultedFileName.Hyperlinks.Add(rVaultedFileName, FindLocalPdf(InventorProjectRootFolder, rVaultedFileName.Value2), Type.Missing, Type.Missing, Type.Missing);
+                }
+                else
+                {
+                    rState.Value2 = selectedfile.File.LifecycleInfo.StateName;
+                    rRevision.Value2 = selectedfile.File.RevisionInfo.RevisionLabel;
+                    #region Is Vaulted
+                    //change the font to Wingdings
+                    rVaulted.Font.Name = "Wingdings";
+                    rVaulted.Value2 = ((char)0xFC).ToString();
+                    if (m_conn.Vault.ToString() == "Legacy Vault")
+                    {
+                        rVaultLocation.Value2 = selectedfile.Folder.FullName.ToString().Replace("/", "\\").Replace("$", "C:\\Legacy Vault Working Folder") + "\\" + selectedfile.File.EntityName;
+                    }
+                    else
+                    {
+                        rVaultLocation.Value2 = selectedfile.folder.FullName.ToString().Replace("/", "\\").Replace("$", "C:\\Vault Working Folder") + "\\" + selectedfile.File.EntityName;
+                    }
+                    //deals with pulling title, rev number & subject values from the vaulted parts.
+                    if (IsXLCVErr(rTitle.Value2) || rTitle.Value2 == "" || rTitle.Value2 == null)
+                    {
+                        if (selectedfile.Title != string.Empty)
+                        {
+                            rTitle.Value2 = selectedfile.Title;
+                        }
+                        else
+                        {
+                            rTitle.Value2 = "No Title iProperty Found!";
+                        }
+                    }
+                    else if (rTitle.Value2 != selectedfile.Title) //allows for changes/updates to vault information!
+                    {
+                        if (selectedfile.Title != string.Empty)
+                        {
+                            rTitle.Value2 = selectedfile.Title;
+                        }
+                        else
+                        {
+                            rTitle.Value2 = "No Title iProperty Found!";
+                        }
+                    }
+                    if (IsXLCVErr(rDrawingRevision.Value2) || rDrawingRevision.Value2 == "" || rDrawingRevision.Value2 == null)
+                    {
+                        if (selectedfile.RevNumber != string.Empty)
+                        {
+                            rDrawingRevision.Value2 = selectedfile.RevNumber;
+                        }
+                        else
+                        {
+                            rDrawingRevision.Value2 = "No Rev Number iProperty Found!";
+                        }
+                    }
+                    else if (rDrawingRevision.Value2 != selectedfile.RevNumber)
+                    {
+                        if (selectedfile.RevNumber != string.Empty)
+                        {
+                            rDrawingRevision.Value2 = selectedfile.RevNumber;
+                        }
+                        else
+                        {
+                            rDrawingRevision.Value2 = "No Rev Number iProperty Found!";
+                        }
+                    }
+                    if (IsXLCVErr(rLegacyDrawingNumber.Value2) || rLegacyDrawingNumber.Value2 == "" || rLegacyDrawingNumber.Value2 == null)
+                    {
+                        if (selectedfile.LegacyDrawingNumber != string.Empty)
+                        {
+                            rLegacyDrawingNumber.Value2 = selectedfile.LegacyDrawingNumber;
+                        }
+                        else
+                        {
+                            rLegacyDrawingNumber.Value2 = "No Legacy Drawing Number (Subject) iProperty Found!";
+                        }
+                    }
+                    else if (rLegacyDrawingNumber.Value2 != selectedfile.LegacyDrawingNumber)
+                    {
+                        if (selectedfile.LegacyDrawingNumber != string.Empty)
+                        {
+                            rLegacyDrawingNumber.Value2 = selectedfile.LegacyDrawingNumber;
+                        }
+                        else
+                        {
+                            rLegacyDrawingNumber.Value2 = "No Legacy Drawing Number (Subject) iProperty Found!";
+                        }
+                    }
+                    if (selectedfile.FeatureCount > 0)
+                    {
+                        rFeatureCount.Value2 = selectedfile.FeatureCount;
+                    }
+                    else
+                    {
+                        rFeatureCount.Value2 = 0;
+                    }
+                    if (selectedfile.ParameterCount > 0)
+                    {
+                        rParameterCount.Value2 = selectedfile.ParameterCount;
+                    }
+                    else
+                    {
+                        rParameterCount.Value2 = 0;
+                    }
+                    if (selectedfile.OccurrenceCount > 0)
+                    {
+                        rOccurrenceCount.Value2 = selectedfile.OccurrenceCount;
+                    }
+                    else
+                    {
+                        rOccurrenceCount.Value2 = 0;
+                    }
+                    if (selectedfile.ConstraintCount > 0)
+                    {
+                        rConstraintCount.Value2 = selectedfile.ConstraintCount;
+                    }
+                    else
+                    {
+                        rConstraintCount.Value2 = 0;
+                    }
+                    #endregion
+                    //reset the NoMatch bool & selectedfile
+                }
             }
-            else
+            catch (Exception ex)
             {
-                rState.Value2 = selectedfile.File.LifecycleInfo.StateName;
-                rRevision.Value2 = selectedfile.File.RevisionInfo.RevisionLabel;
-                #region Is Vaulted
-                //change the font to Wingdings
-                rVaulted.Font.Name = "Wingdings";
-                rVaulted.Value2 = ((char)0xFC).ToString();
-                if (m_conn.Vault.ToString() == "Legacy Vault")
-                {
-                    rVaultLocation.Value2 = selectedfile.Folder.FullName.ToString().Replace("/", "\\").Replace("$", "C:\\Legacy Vault Working Folder") + "\\" + selectedfile.File.EntityName;
-                }
-                else
-                {
-                    rVaultLocation.Value2 = selectedfile.folder.FullName.ToString().Replace("/", "\\").Replace("$", "C:\\Vault Working Folder") + "\\" + selectedfile.File.EntityName;
-                }
-                //deals with pulling title, rev number & subject values from the vaulted parts.
-                if (rTitle.Value2 == "" || rTitle.Value2 == null)
-                {
-                    if(selectedfile.Title != string.Empty)
-                    {
-                        rTitle.Value2 = selectedfile.Title;
-                    }
-                    else
-                    {
-                        rTitle.Value2 = "No Title iProperty Found!";
-                    }
-                }
-                else if (rTitle.Value2 != selectedfile.Title) //allows for changes/updates to vault information!
-                {
-                    if (selectedfile.Title != string.Empty)
-                    {
-                        rTitle.Value2 = selectedfile.Title;
-                    }
-                    else
-                    {
-                        rTitle.Value2 = "No Title iProperty Found!";
-                    }
-                }
-                if (rDrawingRevision.Value2 == "" || rDrawingRevision.Value2 == null)
-                {
-                    if (selectedfile.RevNumber != string.Empty)
-                    {
-                        rDrawingRevision.Value2 = selectedfile.RevNumber;
-                    }
-                    else
-                    {
-                        rDrawingRevision.Value2 = "No Rev Number iProperty Found!";
-                    }
-                }
-                else if (rDrawingRevision.Value2 != selectedfile.RevNumber)
-                {
-                    if (selectedfile.RevNumber != string.Empty)
-                    {
-                        rDrawingRevision.Value2 = selectedfile.RevNumber;
-                    }
-                    else
-                    {
-                        rDrawingRevision.Value2 = "No Rev Number iProperty Found!";
-                    }
-                }
-                if (rLegacyDrawingNumber.Value2 == "" || rLegacyDrawingNumber.Value2 == null)
-                {
-                    if (selectedfile.LegacyDrawingNumber != string.Empty)
-                    {
-                        rLegacyDrawingNumber.Value2 = selectedfile.LegacyDrawingNumber;
-                    }
-                    else
-                    {
-                        rLegacyDrawingNumber.Value2 = "No Legacy Drawing Number (Subject) iProperty Found!";
-                    }
-                }
-                else if (rLegacyDrawingNumber.Value2 != selectedfile.LegacyDrawingNumber)
-                {
-                    if (selectedfile.LegacyDrawingNumber != string.Empty)
-                    {
-                        rLegacyDrawingNumber.Value2 = selectedfile.LegacyDrawingNumber;
-                    }
-                    else
-                    {
-                        rLegacyDrawingNumber.Value2 = "No Legacy Drawing Number (Subject) iProperty Found!";
-                    }
-                }
-                if (selectedfile.FeatureCount > 0)
-                {
-                    rFeatureCount.Value2 = selectedfile.FeatureCount;
-                }
-                else
-                {
-                    rFeatureCount.Value2 = 0;
-                }
-                if (selectedfile.ParameterCount > 0)
-                {
-                    rParameterCount.Value2 = selectedfile.ParameterCount;
-                }
-                else
-                {
-                    rParameterCount.Value2 = 0;
-                }
-                if (selectedfile.OccurrenceCount > 0)
-                {
-                    rOccurrenceCount.Value2 = selectedfile.OccurrenceCount;
-                }
-                else
-                {
-                    rOccurrenceCount.Value2 = 0;
-                }
-                if (selectedfile.ConstraintCount > 0)
-                {
-                    rConstraintCount.Value2 = selectedfile.ConstraintCount;
-                }
-                else
-                {
-                    rConstraintCount.Value2 = 0;
-                }
-                #endregion
-                //reset the NoMatch bool & selectedfile
+                MessageBox.Show("The error was: " + ex.Message + ex.StackTrace);
+                throw;
             }
         }
-		
+
+        private bool IsXLCVErr(object obj)
+        {
+            return (obj) is Int32;
+        }
+		private bool IsXLCVErr(object obj, CVErrEnum whichError)
+        {
+            return (obj is Int32) && ((Int32)obj == (Int32)whichError);
+        }
         ///Updates the statusbar with a percentage so we can see how far along we are.
         public void UpdateStatusBar(double percent, string Message = "")
         {
