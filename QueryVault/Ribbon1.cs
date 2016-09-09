@@ -16,7 +16,7 @@ namespace QueryVault
 
         private void QueryVault_Click(object sender, RibbonControlEventArgs e)
         {
-            if (Globals.ThisAddIn.Application.ActiveWorkbook.Name == "Project Tracker.xlsx")
+            if (Globals.ThisAddIn.Application.ActiveWorkbook.Name.Contains("Project Tracker.xlsx"))
             {
                 Globals.ThisAddIn.pdf = false;
                 Globals.ThisAddIn.InitializeSearchFromExcel();
