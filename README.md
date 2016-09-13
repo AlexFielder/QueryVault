@@ -1,5 +1,5 @@
 # QueryVault
-This addin lets the user pull Vault Professional data into an Excel spreadsheet
+This addin lets the user pull Autodesk Vault Professional 2017 data into an Excel 2016 spreadsheet
 
 It is designed to only work in Excel files that have "Project Tracker" as part of their filename.
 
