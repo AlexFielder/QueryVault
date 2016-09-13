@@ -139,6 +139,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Autodesk\Autodesk Vault 2017 SDK\bin\x86\Autodesk.Connectivity.WebServices.dll</HintPath>
     </Reference>
+    <Reference Include="Autodesk.Connectivity.WebServices.Interop, Version=22.0.0.0, Culture=neutral, PublicKeyToken=aa20f34aedd220e1, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Autodesk\Autodesk Vault 2017 SDK\bin\x86\Autodesk.Connectivity.WebServices.Interop.dll</HintPath>
+    </Reference>
     <Reference Include="Autodesk.DataManagement.Client.Framework, Version=22.0.0.0, Culture=neutral, PublicKeyToken=aa20f34aedd220e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Autodesk\Autodesk Vault 2017 SDK\bin\x86\Autodesk.DataManagement.Client.Framework.dll</HintPath>
@@ -265,6 +269,9 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="clmloader.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="NDde.xml" />
   </ItemGroup>
   <PropertyGroup>
