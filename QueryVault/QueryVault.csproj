@@ -272,9 +272,7 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="clmloader.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <Content Include="clmloader.dll" />
     <Content Include="NDde.xml" />
   </ItemGroup>
   <PropertyGroup>
@@ -305,4 +303,7 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
+  <PropertyGroup>
+    <PostBuildEvent>XCopy "$(ProjectDir)clmloader.dll" "%25ProgramFiles(x86)%25\Microsoft Office\root\Office16\" /Y /R</PostBuildEvent>
+  </PropertyGroup>
 </Project>
